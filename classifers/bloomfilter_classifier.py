@@ -20,9 +20,9 @@ data = pd.read_csv("../data/pruned_gas_data.csv")
 
 'sampling to make sure the training set capture the normal operational profile of gas pipeline'
 sampling = random.sample(range(0,data.shape[0]), data.shape[0])
-training_samples = sampling[:len(sampling)*3/5]
-validation_samples = sampling[len(sampling)*3/5:len(sampling)*4/5]
-testing_samples = sampling[len(sampling)*4/5:]
+training_samples = sampling[:len(sampling)*3//5]
+validation_samples = sampling[len(sampling)*3//5:len(sampling)*4//5]
+testing_samples = sampling[len(sampling)*4//5:]
 
 data['tag'] = TRAINING
 data.loc[validation_samples, 'tag'] = VALIDATION
@@ -100,7 +100,7 @@ def package_level_dectection(training_data, data):
     
     validation_err = validation_result.count(1)*1.0/len(validation_result)
     
-    print 'validation error:' + str(validation_err)
+    print( 'validation error:' + str(validation_err) )
     
 
     ####construct signature database 
@@ -125,7 +125,7 @@ def package_level_dectection(training_data, data):
                 dict[data_vals[i]] = num
                 data_vals[i] = num
                 num += 1
-                           
+                               
     df = {'signature': data_vals, 'binary result': binary_result, 'specific result': specific_result, 'bf result':filter_result, 'tag':tag }
     df = DataFrame(data=df)
     df = pd.concat([df, data], axis=1)

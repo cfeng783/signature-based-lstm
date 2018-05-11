@@ -7,7 +7,7 @@ from sklearn.cluster import KMeans
 
 sigma = 0.05
 
-  
+orphan_theta = 500  
 
 
 def _detect_kmeans_outlier(cluster_centers, max_dist, data, cluster_num, entry_name, new_entry_name):
@@ -83,9 +83,11 @@ def _divideDataColumnWithQ(training_data, test_data, entry_name, interval_num, s
     interval = float(max_data-min_data)/interval_num
     training_data[new_entry_name] = 0
     training_data.loc[training_data[entry_name] == 999,new_entry_name] = interval_num
+    orphans = []
     for i in range(interval_num):
         training_data.loc[(training_data[entry_name]>=min_data+i*interval) & (training_data[entry_name]<=min_data+(i+1)*interval),new_entry_name] = i
-        
+        if training_data[training_data[new_entry_name]==i].shape[0] < orphan_theta:
+            orphans.append(i)
     
 #     _detect_even_inteval_outlier(validation_data, new_entry_name, entry_name, max_data, min_data, interval_num, interval)
     _detect_even_inteval_outlier(test_data, new_entry_name, entry_name, max_data, min_data, interval_num, interval)
@@ -94,7 +96,10 @@ def _divideDataColumnWithQ(training_data, test_data, entry_name, interval_num, s
         training_data.loc[training_data[new_entry_name] < interval_num, new_entry_name] = 0
 #         validation_data.loc[validation_data[new_entry_name] < interval_num, new_entry_name] = 0
         test_data.loc[test_data[new_entry_name] < interval_num, new_entry_name] = 0
-        
+    else:
+        for i in orphans:
+            training_data.loc[training_data[new_entry_name]==i,new_entry_name] = orphans[0]
+            test_data.loc[test_data[new_entry_name]==i,new_entry_name] = orphans[0]
     
 
 def _clusterMulDimensionalDataColumn(training_data, test_data, entry_list, new_entry_name, cluster_num):
@@ -116,7 +121,13 @@ def _clusterMulDimensionalDataColumn(training_data, test_data, entry_list, new_e
 #     validation_data.loc[:,new_entry_name] = kmeans_ret.predict(validation_data[entry_list].as_matrix())
     
     test_data.loc[:,new_entry_name] = kmeans_ret.predict(test_data[entry_list].as_matrix())
-
+    orphans = []
+    for i in range(cluster_num):
+        if training_data[training_data[new_entry_name]==i].shape[0] < orphan_theta:
+            orphans.append(i)
+    for i in orphans:
+        training_data.loc[training_data[new_entry_name]==i,new_entry_name] = orphans[0]
+        test_data.loc[test_data[new_entry_name]==i,new_entry_name] = orphans[0]
 
             
     
