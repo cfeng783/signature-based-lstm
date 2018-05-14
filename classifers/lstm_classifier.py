@@ -103,21 +103,19 @@ def _load_data(dataset, onehot_entries):
         else:
             dataX_copy = dataset.iloc[i:i+lookback].copy()
             dataX_copy = dataX_copy.reset_index(drop=True)
-            binary_rets = list(dataX_copy['binary result'].values)
-            if binary_rets.count(1) == 0:##only use normal data as training and validation
-                for j in range(lookback):##corruput input
-                    if(random.random()<alpha/(alpha+data.loc[i+j,'freq'])):
-                        choice = random.randint(0,len(disc_input)-1)
-                        chosen_feature = disc_input[choice]
-                        feature_name = onehot_entries[chosen_feature]
-                            
-                        if(len(feature_name) == 1):
-                            dataX_copy.loc[j,feature_name] = 1-data.loc[i+j,feature_name]
-                        else:
-                            feature_vector = [0] * len(feature_name)
-                            choice = len(feature_vector)-1
-                            feature_vector[choice] = 1                                
-                            dataX_copy.loc[j,feature_name] = feature_vector 
+            for j in range(lookback):##corruput input
+                if(random.random()<alpha/(alpha+data.loc[i+j,'freq'])):
+                    choice = random.randint(0,len(disc_input)-1)
+                    chosen_feature = disc_input[choice]
+                    feature_name = onehot_entries[chosen_feature]
+                        
+                    if(len(feature_name) == 1):
+                        dataX_copy.loc[j,feature_name] = 1-data.loc[i+j,feature_name]
+                    else:
+                        feature_vector = [0] * len(feature_name)
+                        choice = len(feature_vector)-1
+                        feature_vector[choice] = 1                                
+                        dataX_copy.loc[j,feature_name] = feature_vector 
             if dataset.loc[i+lookback, 'tag'] == TRAINING:    
                 trainX.append( dataX_copy.loc[:, input_signals].as_matrix() )
                 trainY.append( dataset.loc[i+lookback, output_signals].as_matrix() )

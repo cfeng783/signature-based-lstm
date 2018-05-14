@@ -11,30 +11,38 @@ TEST = 102
 VALIDATION = 103
 ABANDON = 104
 
+lookback = 4
+
 'the dataset is from http://www.ece.uah.edu/~thm0009/icsdatasets/IanArffDataset.arff'
 'since the dataset is flawed with attacks are mislabeled for commands and responses, we combine a command and a response to a single package for classification'
 data = pd.read_csv("../data/pruned_gas_data.csv")
 
 
-
+normal_index = data[data['binary result'] == 0].index.values.tolist()
+abnormal_index = data[data['binary result'] == 1].index.values.tolist()
 
 'sampling to make sure the training set capture the normal operational profile of gas pipeline'
-sampling = random.sample(range(0,data.shape[0]), data.shape[0])
+sampling = random.sample(normal_index, len(normal_index))
 training_samples = sampling[:len(sampling)*3//5]
 validation_samples = sampling[len(sampling)*3//5:len(sampling)*4//5]
-testing_samples = sampling[len(sampling)*4//5:]
+testing_samples = sampling[len(sampling)*4//5:] + abnormal_index
 
 data['tag'] = TRAINING
 data.loc[validation_samples, 'tag'] = VALIDATION
 data.loc[testing_samples, 'tag'] = TEST
-data.loc[(data['tag'] != TEST) & (data['binary result']==1), 'tag'] = ABANDON
+
+'remove slices contains anomalies for training and validation set'
+for i in range(len(data)-lookback-1):
+    if data.loc[i+lookback, 'tag'] != TEST:
+        binary_rets = list(data.loc[i:i+lookback, 'binary result'].values)
+        if binary_rets.count(1) > 0:
+            data.loc[i+lookback,'tag'] = ABANDON
+
 
 'remove anomalies from training and validation dataset'
 training_data = data[data['tag'] == TRAINING]
-training_data = training_data[training_data['binary result'] == 0] 
 
 validation_data = data[data['tag'] == VALIDATION]
-validation_data = validation_data[validation_data['binary result'] == 0]
 validation_samples = validation_data.index.values.tolist()
 
 test_data = data[data['tag'] == TEST]
@@ -45,8 +53,8 @@ def package_level_dectection(training_data, data):
     clustering._clusterDataColumnNoQ(training_data, data,'interval_1',2)
     clustering._clusterDataColumnNoQ(training_data, data,'interval_2',2)
     
-    clustering._divideDataColumnWithQ(training_data, data,'setpoint',9,standard=0)
-    clustering._divideDataColumnWithQ(training_data, data,'pressure measurement',19,standard=0)
+    clustering._divideDataColumnWithQ(training_data, data,'setpoint',10,standard=0)
+    clustering._divideDataColumnWithQ(training_data, data,'pressure measurement',20,standard=0)
     
     'standard=1 --> only is used for detecting outliers'
     clustering._divideDataColumnWithQ(training_data, data,'gain',2,standard=1)
@@ -55,7 +63,7 @@ def package_level_dectection(training_data, data):
     clustering._divideDataColumnWithQ(training_data, data,'deadband',2,standard=1)
     clustering._divideDataColumnWithQ(training_data, data,'cycle time',2,standard=1)
     
-    clustering._clusterMulDimensionalDataColumn(training_data, data, ['gain','reset rate', 'deadband', 'cycle time', 'rate'], 'PID_cluster', 31)
+    clustering._clusterMulDimensionalDataColumn(training_data, data, ['gain','reset rate', 'deadband', 'cycle time', 'rate'], 'PID_cluster', 32)
     clustering._clusterDataColumnNoQ(training_data, data,'cmd_crc rate',2)
     clustering._clusterDataColumnNoQ(training_data, data,'rps_crc rate',2)
   
